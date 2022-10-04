@@ -1,0 +1,31 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  labels:
+    app.kubernetes.io/name: hello
+    app.kubernetes.io/version: "1.0"
+  name: hello
+spec:
+  gateways:
+    - istio-system/mesh-gateway
+  hosts:
+    - 'hello.mesh.control-cluster-raffa.demo.red-chesterfield.com'
+  http:
+#    - name: transcoded
+#      match:
+#        - name: rest-content-type
+#          headers:
+#            "Content-Type":
+#              exact: "application/json"
+#      route:
+#        - destination:
+#            host: hello
+#            port:
+#              number: 9000
+    - name: primary
+      route:
+        - destination:
+            host: hello
+            port:
+              number: 9000
+

@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+import "google/api/annotations.proto";
+
+option java_multiple_files = true;
+option java_package = "org.acme";
+option java_outer_classname = "HelloGrpcProto";
+option go_package = "org.acme";
+
+package hello;
+
+service HelloGrpc {
+    rpc SayHello (HelloRequest) returns (HelloReply) {
+        option (google.api.http) = {
+            get: "/say/{name}"
+        };
+    }
+}
+
+message HelloRequest {
+    string name = 1;
+}
+
+message HelloReply {
+    string message = 1;
+}

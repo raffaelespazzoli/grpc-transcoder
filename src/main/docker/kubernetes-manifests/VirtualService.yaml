@@ -1,0 +1,20 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  labels:
+    app.kubernetes.io/name: fga-java
+    app.kubernetes.io/version: "1.0"
+  name: fga-java
+  namespace: test-grpc
+spec:
+  gateways:
+    - istio-system/mesh-gateway
+  hosts:
+    - '*'
+  http:             
+    - name: primary
+      route:
+        - destination:
+            host: fga-java
+            port:
+              number: 9000

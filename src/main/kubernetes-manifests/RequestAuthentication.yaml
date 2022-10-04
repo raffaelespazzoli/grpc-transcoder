@@ -1,0 +1,13 @@
+apiVersion: "security.istio.io/v1beta1"
+kind: "RequestAuthentication"
+metadata:
+  name: "jwt"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: hello
+  jwtRules:
+    - issuer: "testing@secure.istio.io"
+      jwksUri: "https://raw.githubusercontent.com/istio/istio/release-1.12/security/tools/jwt/samples/jwks.json"
+      outputPayloadToHeader: x-jwt
+      forwardOriginalToken: true

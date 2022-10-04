@@ -1,0 +1,681 @@
+
+- address:
+    socketAddress:
+      address: 0.0.0.0
+      portValue: 15006
+  continueOnListenerFiltersTimeout: true
+  filterChains:
+  - filterChainMatch:
+      destinationPort: 15006
+    filters:
+    - name: istio.metadata_exchange
+      typedConfig:
+        '@type': type.googleapis.com/udpa.type.v1.TypedStruct
+        typeUrl: type.googleapis.com/envoy.tcp.metadataexchange.config.MetadataExchange
+        value:
+          protocol: istio-peer-exchange
+    - name: istio.stats
+      typedConfig:
+        '@type': type.googleapis.com/udpa.type.v1.TypedStruct
+        typeUrl: type.googleapis.com/envoy.extensions.filters.network.wasm.v3.Wasm
+        value:
+          config:
+            configuration: |
+              {
+                "debug": "false",
+                "stat_prefix": "istio"
+              }
+            root_id: stats_inbound
+            vm_config:
+              code:
+                local:
+                  inline_string: envoy.wasm.stats
+              runtime: envoy.wasm.runtime.null
+              vm_id: tcp_stats_inbound
+    - name: envoy.tcp_proxy
+      typedConfig:
+        '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+        cluster: BlackHoleCluster
+        statPrefix: BlackHoleCluster
+    name: virtualInbound-blackhole
+  - filterChainMatch:
+      prefixRanges:
+      - addressPrefix: 0.0.0.0
+        prefixLen: 0
+      transportProtocol: tls
+    filters:
+    - name: istio.metadata_exchange
+      typedConfig:
+        '@type': type.googleapis.com/udpa.type.v1.TypedStruct
+        typeUrl: type.googleapis.com/envoy.tcp.metadataexchange.config.MetadataExchange
+        value:
+          protocol: istio-peer-exchange
+    - name: envoy.filters.network.rbac
+      typedConfig:
+        '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
+        rules:
+          action: DENY
+          policies:
+            ns[test-grpc]-policy[jwt-must]-rule[0]:
+              permissions:
+              - andRules:
+                  rules:
+                  - any: true
+              principals:
+              - andIds:
+                  ids:
+                  - any: true
+        statPrefix: tcp.
+    - name: istio.stats
+      typedConfig:
+        '@type': type.googleapis.com/udpa.type.v1.TypedStruct
+        typeUrl: type.googleapis.com/envoy.extensions.filters.network.wasm.v3.Wasm
+        value:
+          config:
+            configuration: |
+              {
+                "debug": "false",
+                "stat_prefix": "istio"
+              }
+            root_id: stats_inbound
+            vm_config:
+              code:
+                local:
+                  inline_string: envoy.wasm.stats
+              runtime: envoy.wasm.runtime.null
+              vm_id: tcp_stats_inbound
+    - name: envoy.tcp_proxy
+      typedConfig:
+        '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+        cluster: InboundPassthroughClusterIpv4
+        statPrefix: InboundPassthroughClusterIpv4
+    name: virtualInbound
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - istio-peer-exchange
+          - h2
+          - http/1.1
+          combinedValidationContext:
+            defaultValidationContext:
+              matchSubjectAltNames:
+              - prefix: spiffe://cluster.local/
+            validationContextSdsSecretConfig:
+              name: ROOTCA
+              sdsConfig:
+                apiConfigSource:
+                  apiType: GRPC
+                  grpcServices:
+                  - envoyGrpc:
+                      clusterName: sds-grpc
+                initialFetchTimeout: 0s
+          tlsCertificateSdsSecretConfigs:
+          - name: default
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: sds-grpc
+              initialFetchTimeout: 0s
+          tlsParams: {}
+        requireClientCertificate: true
+  - filterChainMatch:
+      prefixRanges:
+      - addressPrefix: ::0
+        prefixLen: 0
+      transportProtocol: tls
+    filters:
+    - name: istio.metadata_exchange
+      typedConfig:
+        '@type': type.googleapis.com/udpa.type.v1.TypedStruct
+        typeUrl: type.googleapis.com/envoy.tcp.metadataexchange.config.MetadataExchange
+        value:
+          protocol: istio-peer-exchange
+    - name: envoy.filters.network.rbac
+      typedConfig:
+        '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
+        rules:
+          action: DENY
+          policies:
+            ns[test-grpc]-policy[jwt-must]-rule[0]:
+              permissions:
+              - andRules:
+                  rules:
+                  - any: true
+              principals:
+              - andIds:
+                  ids:
+                  - any: true
+        statPrefix: tcp.
+    - name: istio.stats
+      typedConfig:
+        '@type': type.googleapis.com/udpa.type.v1.TypedStruct
+        typeUrl: type.googleapis.com/envoy.extensions.filters.network.wasm.v3.Wasm
+        value:
+          config:
+            configuration: |
+              {
+                "debug": "false",
+                "stat_prefix": "istio"
+              }
+            root_id: stats_inbound
+            vm_config:
+              code:
+                local:
+                  inline_string: envoy.wasm.stats
+              runtime: envoy.wasm.runtime.null
+              vm_id: tcp_stats_inbound
+    - name: envoy.tcp_proxy
+      typedConfig:
+        '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+        cluster: InboundPassthroughClusterIpv6
+        statPrefix: InboundPassthroughClusterIpv6
+    name: virtualInbound
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - istio-peer-exchange
+          - h2
+          - http/1.1
+          combinedValidationContext:
+            defaultValidationContext:
+              matchSubjectAltNames:
+              - prefix: spiffe://cluster.local/
+            validationContextSdsSecretConfig:
+              name: ROOTCA
+              sdsConfig:
+                apiConfigSource:
+                  apiType: GRPC
+                  grpcServices:
+                  - envoyGrpc:
+                      clusterName: sds-grpc
+                initialFetchTimeout: 0s
+          tlsCertificateSdsSecretConfigs:
+          - name: default
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: sds-grpc
+              initialFetchTimeout: 0s
+          tlsParams: {}
+        requireClientCertificate: true
+  - filterChainMatch:
+      destinationPort: 15021
+      prefixRanges:
+      - addressPrefix: 10.130.3.237
+        prefixLen: 32
+    filters:
+    - name: istio.metadata_exchange
+      typedConfig:
+        '@type': type.googleapis.com/udpa.type.v1.TypedStruct
+        typeUrl: type.googleapis.com/envoy.tcp.metadataexchange.config.MetadataExchange
+        value:
+          protocol: istio-peer-exchange
+    - name: istio.stats
+      typedConfig:
+        '@type': type.googleapis.com/udpa.type.v1.TypedStruct
+        typeUrl: type.googleapis.com/envoy.extensions.filters.network.wasm.v3.Wasm
+        value:
+          config:
+            configuration: |
+              {
+                "debug": "false",
+                "stat_prefix": "istio"
+              }
+            root_id: stats_inbound
+            vm_config:
+              code:
+                local:
+                  inline_string: envoy.wasm.stats
+              runtime: envoy.wasm.runtime.null
+              vm_id: tcp_stats_inbound
+    - name: envoy.tcp_proxy
+      typedConfig:
+        '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+        cluster: inbound|15021|mgmt-15021|mgmtCluster
+        statPrefix: inbound|15021|mgmt-15021|mgmtCluster
+    name: 10.130.3.237_15021
+  - filterChainMatch:
+      destinationPort: 9000
+      prefixRanges:
+      - addressPrefix: 10.130.3.237
+        prefixLen: 32
+    filters:
+    - name: istio.metadata_exchange
+      typedConfig:
+        '@type': type.googleapis.com/udpa.type.v1.TypedStruct
+        typeUrl: type.googleapis.com/envoy.tcp.metadataexchange.config.MetadataExchange
+        value:
+          protocol: istio-peer-exchange
+    - name: envoy.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+        forwardClientCertDetails: APPEND_FORWARD
+        generateRequestId: true
+        http2ProtocolOptions: {}
+        httpFilters:
+        - name: istio.metadata_exchange
+          typedConfig:
+            '@type': type.googleapis.com/udpa.type.v1.TypedStruct
+            typeUrl: type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+            value:
+              config:
+                configuration: |
+                  {}
+                vm_config:
+                  code:
+                    local:
+                      inline_string: envoy.wasm.metadata_exchange
+                  runtime: envoy.wasm.runtime.null
+        - name: envoy.filters.http.jwt_authn
+          typedConfig:
+            '@type': type.googleapis.com/envoy.config.filter.http.jwt_authn.v2alpha.JwtAuthentication
+            providers:
+              origins-0:
+                forward: true
+                forwardPayloadHeader: x-jwt
+                issuer: testing@secure.istio.io
+                localJwks:
+                  inlineString: '{ "keys":[ {"e":"AQAB","kid":"DHFbpoIUqrY8t2zpA2qXfCmr5VO5ZEr4RzHU_-envvQ","kty":"RSA","n":"xAE7eB6qugXyCAG3yhh7pkDkT65pHymX-P7KfIupjf59vsdo91bSP9C8H07pSAGQO1MV_xFj9VswgsCg4R6otmg5PV2He95lZdHtOcU5DXIg_pbhLdKXbi66GlVeK6ABZOUW3WYtnNHD-91gVuoeJT_DwtGGcp4ignkgXfkiEm4sw-4sfb4qdt5oLbyVpmW6x9cfa7vs2WTfURiCrBoUqgBo_-4WTiULmmHSGZHOjzwa8WtrtOQGsAFjIbno85jp6MnGGGZPYZbDAa_b3y5u-YpW7ypZrvD8BgtKVjgtQgZhLAGezMt0ua3DRrWnKqTZ0BJ_EyxOGuHJrLsn00fnMQ"}]}'
+                payloadInMetadata: testing@secure.istio.io
+            rules:
+            - match:
+                prefix: /
+              requires:
+                requiresAny:
+                  requirements:
+                  - providerName: origins-0
+                  - allowMissing: {}
+        - name: istio_authn
+          typedConfig:
+            '@type': type.googleapis.com/istio.envoy.config.filter.http.authn.v2alpha1.FilterConfig
+            policy:
+              originIsOptional: true
+              origins:
+              - jwt:
+                  issuer: testing@secure.istio.io
+              peers:
+              - mtls: {}
+              principalBinding: USE_ORIGIN
+            skipValidateTrustDomain: true
+        - name: envoy.filters.http.rbac
+          typedConfig:
+            '@type': type.googleapis.com/envoy.config.filter.http.rbac.v2.RBAC
+            rules:
+              action: DENY
+              policies:
+                ns[test-grpc]-policy[jwt-must]-rule[0]:
+                  permissions:
+                  - andRules:
+                      rules:
+                      - any: true
+                  principals:
+                  - andIds:
+                      ids:
+                      - notId:
+                          orIds:
+                            ids:
+                            - metadata:
+                                filter: istio_authn
+                                path:
+                                - key: request.auth.principal
+                                value:
+                                  stringMatch:
+                                    safeRegex:
+                                      googleRe2: {}
+                                      regex: .+
+        - name: envoy.filters.http.grpc_stats
+          typedConfig:
+            '@type': type.googleapis.com/envoy.config.filter.http.grpc_stats.v2alpha.FilterConfig
+            emitFilterState: true
+        - name: envoy.cors
+          typedConfig:
+            '@type': type.googleapis.com/envoy.config.filter.http.cors.v2.Cors
+        - name: envoy.fault
+          typedConfig:
+            '@type': type.googleapis.com/envoy.config.filter.http.fault.v2.HTTPFault
+        - name: istio.stats
+          typedConfig:
+            '@type': type.googleapis.com/udpa.type.v1.TypedStruct
+            typeUrl: type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+            value:
+              config:
+                configuration: |
+                  {
+                    "debug": "false",
+                    "stat_prefix": "istio"
+                  }
+                root_id: stats_inbound
+                vm_config:
+                  code:
+                    local:
+                      inline_string: envoy.wasm.stats
+                  runtime: envoy.wasm.runtime.null
+                  vm_id: stats_inbound
+        - name: envoy.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.config.filter.http.router.v2.Router
+        normalizePath: true
+        routeConfig:
+          name: inbound|9000|grpc|hello.test-grpc.svc.cluster.local
+          validateClusters: false
+          virtualHosts:
+          - domains:
+            - '*'
+            name: inbound|http|9000
+            routes:
+            - decorator:
+                operation: hello.test-grpc.svc.cluster.local:9000/*
+              match:
+                prefix: /
+              name: default
+              route:
+                cluster: inbound|9000|grpc|hello.test-grpc.svc.cluster.local
+                maxGrpcTimeout: 0s
+                timeout: 0s
+        serverName: istio-envoy
+        setCurrentClientCertDetails:
+          dns: true
+          subject: true
+          uri: true
+        statPrefix: inbound_10.130.3.237_9000
+        streamIdleTimeout: 0s
+        tracing:
+          clientSampling:
+            value: 100
+          overallSampling:
+            value: 100
+          randomSampling:
+            value: 100
+        upgradeConfigs:
+        - upgradeType: websocket
+        useRemoteAddress: false
+    name: 10.130.3.237_9000
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - h2
+          - http/1.1
+          combinedValidationContext:
+            defaultValidationContext:
+              matchSubjectAltNames:
+              - prefix: spiffe://cluster.local/
+            validationContextSdsSecretConfig:
+              name: ROOTCA
+              sdsConfig:
+                apiConfigSource:
+                  apiType: GRPC
+                  grpcServices:
+                  - envoyGrpc:
+                      clusterName: sds-grpc
+                initialFetchTimeout: 0s
+          tlsCertificateSdsSecretConfigs:
+          - name: default
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: sds-grpc
+              initialFetchTimeout: 0s
+          tlsParams: {}
+        requireClientCertificate: true
+  - filterChainMatch:
+      destinationPort: 9000
+      prefixRanges:
+      - addressPrefix: fe80::858:aff:fe82:3ed
+        prefixLen: 128
+    filters:
+    - name: istio.metadata_exchange
+      typedConfig:
+        '@type': type.googleapis.com/udpa.type.v1.TypedStruct
+        typeUrl: type.googleapis.com/envoy.tcp.metadataexchange.config.MetadataExchange
+        value:
+          protocol: istio-peer-exchange
+    - name: envoy.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+        forwardClientCertDetails: APPEND_FORWARD
+        generateRequestId: true
+        http2ProtocolOptions: {}
+        httpFilters:
+        - name: istio.metadata_exchange
+          typedConfig:
+            '@type': type.googleapis.com/udpa.type.v1.TypedStruct
+            typeUrl: type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+            value:
+              config:
+                configuration: |
+                  {}
+                vm_config:
+                  code:
+                    local:
+                      inline_string: envoy.wasm.metadata_exchange
+                  runtime: envoy.wasm.runtime.null
+        - name: envoy.filters.http.jwt_authn
+          typedConfig:
+            '@type': type.googleapis.com/envoy.config.filter.http.jwt_authn.v2alpha.JwtAuthentication
+            providers:
+              origins-0:
+                forward: true
+                forwardPayloadHeader: x-jwt
+                issuer: testing@secure.istio.io
+                localJwks:
+                  inlineString: '{ "keys":[ {"e":"AQAB","kid":"DHFbpoIUqrY8t2zpA2qXfCmr5VO5ZEr4RzHU_-envvQ","kty":"RSA","n":"xAE7eB6qugXyCAG3yhh7pkDkT65pHymX-P7KfIupjf59vsdo91bSP9C8H07pSAGQO1MV_xFj9VswgsCg4R6otmg5PV2He95lZdHtOcU5DXIg_pbhLdKXbi66GlVeK6ABZOUW3WYtnNHD-91gVuoeJT_DwtGGcp4ignkgXfkiEm4sw-4sfb4qdt5oLbyVpmW6x9cfa7vs2WTfURiCrBoUqgBo_-4WTiULmmHSGZHOjzwa8WtrtOQGsAFjIbno85jp6MnGGGZPYZbDAa_b3y5u-YpW7ypZrvD8BgtKVjgtQgZhLAGezMt0ua3DRrWnKqTZ0BJ_EyxOGuHJrLsn00fnMQ"}]}'
+                payloadInMetadata: testing@secure.istio.io
+            rules:
+            - match:
+                prefix: /
+              requires:
+                requiresAny:
+                  requirements:
+                  - providerName: origins-0
+                  - allowMissing: {}
+        - name: istio_authn
+          typedConfig:
+            '@type': type.googleapis.com/istio.envoy.config.filter.http.authn.v2alpha1.FilterConfig
+            policy:
+              originIsOptional: true
+              origins:
+              - jwt:
+                  issuer: testing@secure.istio.io
+              peers:
+              - mtls: {}
+              principalBinding: USE_ORIGIN
+            skipValidateTrustDomain: true
+        - name: envoy.filters.http.rbac
+          typedConfig:
+            '@type': type.googleapis.com/envoy.config.filter.http.rbac.v2.RBAC
+            rules:
+              action: DENY
+              policies:
+                ns[test-grpc]-policy[jwt-must]-rule[0]:
+                  permissions:
+                  - andRules:
+                      rules:
+                      - any: true
+                  principals:
+                  - andIds:
+                      ids:
+                      - notId:
+                          orIds:
+                            ids:
+                            - metadata:
+                                filter: istio_authn
+                                path:
+                                - key: request.auth.principal
+                                value:
+                                  stringMatch:
+                                    safeRegex:
+                                      googleRe2: {}
+                                      regex: .+
+        - name: envoy.filters.http.grpc_stats
+          typedConfig:
+            '@type': type.googleapis.com/envoy.config.filter.http.grpc_stats.v2alpha.FilterConfig
+            emitFilterState: true
+        - name: envoy.cors
+          typedConfig:
+            '@type': type.googleapis.com/envoy.config.filter.http.cors.v2.Cors
+        - name: envoy.fault
+          typedConfig:
+            '@type': type.googleapis.com/envoy.config.filter.http.fault.v2.HTTPFault
+        - name: istio.stats
+          typedConfig:
+            '@type': type.googleapis.com/udpa.type.v1.TypedStruct
+            typeUrl: type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+            value:
+              config:
+                configuration: |
+                  {
+                    "debug": "false",
+                    "stat_prefix": "istio"
+                  }
+                root_id: stats_inbound
+                vm_config:
+                  code:
+                    local:
+                      inline_string: envoy.wasm.stats
+                  runtime: envoy.wasm.runtime.null
+                  vm_id: stats_inbound
+        - name: envoy.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.config.filter.http.router.v2.Router
+        normalizePath: true
+        routeConfig:
+          name: inbound|9000|grpc|hello.test-grpc.svc.cluster.local
+          validateClusters: false
+          virtualHosts:
+          - domains:
+            - '*'
+            name: inbound|http|9000
+            routes:
+            - decorator:
+                operation: hello.test-grpc.svc.cluster.local:9000/*
+              match:
+                prefix: /
+              name: default
+              route:
+                cluster: inbound|9000|grpc|hello.test-grpc.svc.cluster.local
+                maxGrpcTimeout: 0s
+                timeout: 0s
+        serverName: istio-envoy
+        setCurrentClientCertDetails:
+          dns: true
+          subject: true
+          uri: true
+        statPrefix: inbound_fe80::858:aff:fe82:3ed_9000
+        streamIdleTimeout: 0s
+        tracing:
+          clientSampling:
+            value: 100
+          overallSampling:
+            value: 100
+          randomSampling:
+            value: 100
+        upgradeConfigs:
+        - upgradeType: websocket
+        useRemoteAddress: false
+    name: fe80::858:aff:fe82:3ed_9000
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - h2
+          - http/1.1
+          combinedValidationContext:
+            defaultValidationContext:
+              matchSubjectAltNames:
+              - prefix: spiffe://cluster.local/
+            validationContextSdsSecretConfig:
+              name: ROOTCA
+              sdsConfig:
+                apiConfigSource:
+                  apiType: GRPC
+                  grpcServices:
+                  - envoyGrpc:
+                      clusterName: sds-grpc
+                initialFetchTimeout: 0s
+          tlsCertificateSdsSecretConfigs:
+          - name: default
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: sds-grpc
+              initialFetchTimeout: 0s
+          tlsParams: {}
+        requireClientCertificate: true
+  listenerFilters:
+  - name: envoy.listener.original_dst
+    typedConfig:
+      '@type': type.googleapis.com/envoy.config.filter.listener.original_dst.v2.OriginalDst
+  - name: envoy.listener.tls_inspector
+    typedConfig:
+      '@type': type.googleapis.com/envoy.config.filter.listener.tls_inspector.v2.TlsInspector
+  listenerFiltersTimeout: 1s
+  name: virtualInbound
+  trafficDirection: INBOUND
+- address:
+    socketAddress:
+      address: 0.0.0.0
+      portValue: 15090
+  filterChains:
+  - filters:
+    - name: envoy.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+        httpFilters:
+        - name: envoy.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.config.filter.http.router.v2.Router
+        routeConfig:
+          virtualHosts:
+          - domains:
+            - '*'
+            name: backend
+            routes:
+            - match:
+                prefix: /stats/prometheus
+              route:
+                cluster: prometheus_stats
+        statPrefix: stats
+- address:
+    socketAddress:
+      address: 0.0.0.0
+      portValue: 15021
+  filterChains:
+  - filters:
+    - name: envoy.http_connection_manager
+      typedConfig:
+        '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+        httpFilters:
+        - name: envoy.router
+          typedConfig:
+            '@type': type.googleapis.com/envoy.config.filter.http.router.v2.Router
+        routeConfig:
+          virtualHosts:
+          - domains:
+            - '*'
+            name: backend
+            routes:
+            - match:
+                prefix: /healthz/ready
+              route:
+                cluster: agent
+        statPrefix: agent
+
